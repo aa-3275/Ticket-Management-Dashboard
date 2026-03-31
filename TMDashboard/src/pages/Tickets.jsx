@@ -1,4 +1,4 @@
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -6,8 +6,6 @@ import { useTickets } from "../hooks/useTickets";
 
 import CreateTicketModal from "../components/CreateTicketModal";
 import Loader from "../components/Loader";
-
-import { fetchTickets, deleteTicket } from "../store/ticketSlice";
 import { useAuth } from "../hooks/useAuth";
 
 const Tickets = () => {
@@ -27,28 +25,23 @@ const Tickets = () => {
 
   const limit = 10;
 
-  // 🔥 Fetch tickets using async thunk
   useEffect(() => {
     getTickets(limit, (page - 1) * limit);
   }, [page]);
 
-  // 🔥 Show error toast
   useEffect(() => {
     if (error) {
       toast.error(error);
     }
   }, [error]);
 
-  // 🔥 Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounceSearch(search);
     }, 500);
-
     return () => clearTimeout(timer);
   }, [search]);
 
-  // 🔥 Filter logic
   const filteredTickets = useMemo(() => {
     return tickets.filter((ticket) => {
       const matchesSearch = ticket.title
@@ -63,7 +56,6 @@ const Tickets = () => {
     });
   }, [tickets, debounceSearch, statusFilter]);
 
-  // 🔥 Delete handler
   const handleDelete = (id) => {
     if (confirm("Are you sure you want to delete?")) {
       removeTicket(id);
@@ -71,36 +63,38 @@ const Tickets = () => {
     }
   };
 
-  // 🔥 Edit handler
   const handleEdit = (ticket) => {
     setEditTicket(ticket);
     setIsModalOpen(true);
   };
 
-  // 🔥 Loading UI
   if (loading) return <Loader />;
 
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 min-h-screen bg-gray-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-200">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Tickets</h1>
+        <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">
+          Tickets
+        </h1>
 
         <div className="flex gap-2">
           <button
             onClick={() => navigate("/")}
-            className="border px-4 py-2 rounded-lg hover:bg-gray-100"
+            className="border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg 
+            hover:bg-gray-100 dark:hover:bg-gray-700 
+            text-gray-800 dark:text-gray-200"
           >
             ← Dashboard
           </button>
 
           {isAdmin && (
             <button
-              disabled={!isAdmin}
               onClick={() => setIsModalOpen(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 
+              text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all"
             >
               + Create Ticket
             </button>
@@ -115,13 +109,19 @@ const Tickets = () => {
           placeholder="Search tickets..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 w-full 
+          bg-white dark:bg-gray-800 
+          text-gray-800 dark:text-gray-200 
+          placeholder-gray-400 dark:placeholder-gray-500
+          focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border rounded-lg px-3 py-2"
+          className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 
+          bg-white dark:bg-gray-800 
+          text-gray-800 dark:text-gray-200"
         >
           <option value="">All</option>
           <option value="Pending">Pending</option>
@@ -130,48 +130,51 @@ const Tickets = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
         <table className="w-full text-left">
-          <thead className="bg-gray-100 text-gray-600 text-sm uppercase">
+          <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm uppercase">
             <tr>
               <th className="p-3">ID</th>
               <th className="p-3">Title</th>
               <th className="p-3">Status</th>
-              <th className="p-3">Actions</th>
+              {isAdmin && <th className="p-3">Actions</th>}
             </tr>
           </thead>
 
-          <tbody className="text-sm text-gray-700">
+          <tbody className="text-sm text-gray-700 dark:text-gray-300">
             {filteredTickets.map((ticket) => (
               <tr
                 key={ticket.id}
-                className="border-b hover:bg-gray-50 transition"
+                className="border-b border-gray-200 dark:border-gray-700 
+                hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
               >
                 <td className="p-3">{ticket.id}</td>
                 <td className="p-3">{ticket.title}</td>
+
                 <td className="p-3">
                   <span
                     className={`px-3 py-1 text-xs font-medium rounded-full ${
                       ticket.status === "Resolved"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
                     }`}
                   >
                     {ticket.status}
                   </span>
                 </td>
+
                 {isAdmin && (
                   <td className="p-3 flex gap-2">
                     <button
                       onClick={() => handleEdit(ticket)}
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 dark:text-blue-400 hover:underline"
                     >
                       Edit
                     </button>
 
                     <button
                       onClick={() => handleDelete(ticket.id)}
-                      className="text-red-600 hover:underline"
+                      className="text-red-600 dark:text-red-400 hover:underline"
                     >
                       Delete
                     </button>
@@ -188,19 +191,25 @@ const Tickets = () => {
         <button
           disabled={page === 1}
           onClick={() => setPage(page - 1)}
-          className="px-4 py-2 border rounded-lg disabled:opacity-50"
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+          disabled:opacity-50 
+          text-gray-800 dark:text-gray-200 
+          hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           Prev
         </button>
 
-        <span className="text-gray-600">
+        <span className="text-gray-600 dark:text-gray-400">
           Page {page} of {totalPages}
         </span>
 
         <button
           disabled={page === totalPages}
           onClick={() => setPage(page + 1)}
-          className="px-4 py-2 border rounded-lg disabled:opacity-50"
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+          disabled:opacity-50 
+          text-gray-800 dark:text-gray-200 
+          hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           Next
         </button>

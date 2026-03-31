@@ -11,13 +11,11 @@ const Login = () => {
   const [password, setPassword] = useState("");
 
   const handleLogin = () => {
-    // 🔥 Validation
     if (!email || !password) {
       toast.error("Please enter email and password");
       return;
     }
 
-    // 🔥 Mock auth logic
     if (email === "admin@test.com" && password === "1234") {
       dispatch(
         login({
@@ -26,6 +24,11 @@ const Login = () => {
         }),
       );
       toast.success("Logged in as Admin");
+
+      // ✅ RESET INPUTS
+      setEmail("");
+      setPassword("");
+
       navigate("/");
     } else if (email === "user@test.com" && password === "1234") {
       dispatch(
@@ -35,9 +38,18 @@ const Login = () => {
         }),
       );
       toast.success("Logged in as User");
+
+      // ✅ RESET INPUTS
+      setEmail("");
+      setPassword("");
+
       navigate("/");
     } else {
       toast.error("Invalid credentials");
+
+      // 🔥 Optional: clear password only on error
+      setPassword("");
+      setEmail("");
     }
   };
 

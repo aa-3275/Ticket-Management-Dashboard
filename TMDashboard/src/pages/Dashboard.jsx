@@ -41,9 +41,15 @@ const Dashboard = () => {
   if (loading) return <Loader />;
 
   return (
-    <div className="min-h-screen text-gray-800 dark:text-gray-200">
+    <div
+      className="
+  min-h-screen 
+  bg-gray-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-gray-800
+  text-gray-800 dark:text-gray-200
+"
+    >
       {/* Heading */}
-      <h1 className="text-2xl font-semibold mb-6 text-gray-800"></h1>
+      <h1 className="text-2xl font-semibold mb-6 text-gray-800"> Dashboard</h1>
 
       {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -56,7 +62,7 @@ const Dashboard = () => {
             key={i}
             onClick={() => navigate("/tickets")}
             className="cursor-pointer 
-              bg-white/70 dark:bg-gray-800/60 
+              bg-white dark:bg-gray-800/70
               backdrop-blur-lg 
               border border-gray-200 dark:border-gray-700 
               rounded-2xl p-5 
