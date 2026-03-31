@@ -10,34 +10,34 @@ const Dashboard = lazy(() => import("../pages/Dashboard"));
 const Tickets = lazy(() => import("../pages/Tickets"));
 const NotFound = lazy(() => import("../pages/NotFound"));
 
-const AppRoutes = () => {
+const AppRoutes = ({ theme, setTheme }) => {
   return (
     <Suspense fallback={<div>Loading</div>}>
       <Routes>
-        {/* Public Routes */}
         <Route path="/Login" element={<Login />} />
-        {/* Protected Routes */}
+
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <Layout>
+              <Layout theme={theme} setTheme={setTheme}>
                 <Dashboard />
               </Layout>
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/tickets"
           element={
-            <ProtectedRoute>
-              <Layout>
+            <ProtectedRoute role="admin">
+              <Layout theme={theme} setTheme={setTheme}>
                 <Tickets />
               </Layout>
             </ProtectedRoute>
           }
         />
-        {/* 404 Error */}
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>

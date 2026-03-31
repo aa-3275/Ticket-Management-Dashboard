@@ -1,75 +1,60 @@
-import { fetchTicketsAPI } from "../services/ticketService";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useMemo, useState } from "react";
-import CreateTicketModal from "../components/CreateTicketModal";
 import { useNavigate } from "react-router-dom";
-import {
-  setTickets,
-  setTotal,
-  setError,
-  setLoading,
-} from "../store/ticketSlice";
-import { deleteTicket } from "../store/ticketSlice";
+import toast from "react-hot-toast";
+import { useTickets } from "../hooks/useTickets";
+
+import CreateTicketModal from "../components/CreateTicketModal";
+import Loader from "../components/Loader";
+
+import { fetchTickets, deleteTicket } from "../store/ticketSlice";
+import { useAuth } from "../hooks/useAuth";
 
 const Tickets = () => {
   const dispatch = useDispatch();
-  const { tickets, loading, error, total } = useSelector(
-    (state) => state.tickets,
-  );
-  const [page, setpage] = useState(1);
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+
+  const { tickets, loading, error, total, getTickets, removeTicket } =
+    useTickets();
+
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [debounceSearch, setDebounceSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editTicket, setEditTicket] = useState(null);
-  const limit = 10;
-  const navigate = useNavigate();
-  const handleDelete = (id) => {
-    if (confirm("Are you sure you want to delete?")) {
-      dispatch(deleteTicket(id));
-    }
-  };
-  const handleEdit = (ticket) => {
-    setEditTicket(ticket);
-    setIsModalOpen(true);
-  };
-  //   Getting All Tickets
-  useEffect(() => {
-    const getTickets = async () => {
-      try {
-        dispatch(setLoading(true));
-        const data = await fetchTicketsAPI(limit, (page - 1) * limit);
-        // Transform API in UI Model
-        const transformed = data.todos.map((item) => ({
-          id: item.id,
-          title: item.todo,
-          status: item.completed ? "Resolved" : "Pending",
-        }));
-        dispatch(setTickets(transformed));
-        dispatch(setTotal(data.total));
-      } catch (err) {
-        dispatch(setError("Failed to fetch Tickets"));
-      } finally {
-        dispatch(setLoading(false));
-      }
-    };
-    getTickets();
-  }, [dispatch, page]);
 
-  //   Settind Debounce Search
-  const [debounceSearch, setDebounceSearch] = useState("");
+  const limit = 10;
+
+  // 🔥 Fetch tickets using async thunk
+  useEffect(() => {
+    getTickets(limit, (page - 1) * limit);
+  }, [page]);
+
+  // 🔥 Show error toast
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  // 🔥 Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounceSearch(search);
     }, 500);
+
     return () => clearTimeout(timer);
   }, [search]);
 
-  // FilterData
+  // 🔥 Filter logic
   const filteredTickets = useMemo(() => {
     return tickets.filter((ticket) => {
       const matchesSearch = ticket.title
         .toLowerCase()
-        .includes(debounceSearch.toLocaleLowerCase());
+        .includes(debounceSearch.toLowerCase());
+
       const matchesStatus = statusFilter
         ? ticket.status === statusFilter
         : true;
@@ -78,12 +63,25 @@ const Tickets = () => {
     });
   }, [tickets, debounceSearch, statusFilter]);
 
-  if (error) return <p> {error}</p>;
-  if (loading) return <p> Loading ...</p>;
+  // 🔥 Delete handler
+  const handleDelete = (id) => {
+    if (confirm("Are you sure you want to delete?")) {
+      removeTicket(id);
+      toast.success("Ticket deleted successfully");
+    }
+  };
+
+  // 🔥 Edit handler
+  const handleEdit = (ticket) => {
+    setEditTicket(ticket);
+    setIsModalOpen(true);
+  };
+
+  // 🔥 Loading UI
+  if (loading) return <Loader />;
+
   const totalPages = Math.ceil(total / limit);
-  console.log("Tickets:", tickets);
-  console.log("Loading:", loading);
-  console.log("Error:", error);
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -98,12 +96,15 @@ const Tickets = () => {
             ← Dashboard
           </button>
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
-          >
-            + Create Ticket
-          </button>
+          {isAdmin && (
+            <button
+              disabled={!isAdmin}
+              onClick={() => setIsModalOpen(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+            >
+              + Create Ticket
+            </button>
+          )}
         </div>
       </div>
 
@@ -128,7 +129,7 @@ const Tickets = () => {
         </select>
       </div>
 
-      {/* Table Card */}
+      {/* Table */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-gray-100 text-gray-600 text-sm uppercase">
@@ -136,6 +137,7 @@ const Tickets = () => {
               <th className="p-3">ID</th>
               <th className="p-3">Title</th>
               <th className="p-3">Status</th>
+              <th className="p-3">Actions</th>
             </tr>
           </thead>
 
@@ -158,21 +160,23 @@ const Tickets = () => {
                     {ticket.status}
                   </span>
                 </td>
-                <td className="p-3 flex gap-2">
-                  <button
-                    onClick={() => handleEdit(ticket)}
-                    className="text-blue-600 hover:underline"
-                  >
-                    Edit
-                  </button>
+                {isAdmin && (
+                  <td className="p-3 flex gap-2">
+                    <button
+                      onClick={() => handleEdit(ticket)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Edit
+                    </button>
 
-                  <button
-                    onClick={() => handleDelete(ticket.id)}
-                    className="text-red-600 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </td>
+                    <button
+                      onClick={() => handleDelete(ticket.id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -183,7 +187,7 @@ const Tickets = () => {
       <div className="mt-6 flex justify-between items-center">
         <button
           disabled={page === 1}
-          onClick={() => setpage(page - 1)}
+          onClick={() => setPage(page - 1)}
           className="px-4 py-2 border rounded-lg disabled:opacity-50"
         >
           Prev
@@ -195,12 +199,14 @@ const Tickets = () => {
 
         <button
           disabled={page === totalPages}
-          onClick={() => setpage(page + 1)}
+          onClick={() => setPage(page + 1)}
           className="px-4 py-2 border rounded-lg disabled:opacity-50"
         >
           Next
         </button>
       </div>
+
+      {/* Modal */}
       <CreateTicketModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -212,4 +218,5 @@ const Tickets = () => {
     </div>
   );
 };
+
 export default Tickets;

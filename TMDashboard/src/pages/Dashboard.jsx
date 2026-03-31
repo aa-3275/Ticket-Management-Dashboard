@@ -1,13 +1,6 @@
-import { useSelector, useDispatch } from "react-redux";
 import { useEffect } from "react";
-import { fetchTicketsAPI } from "../services/ticketService";
-import {
-  setTickets,
-  setTotal,
-  setLoading,
-  setError,
-} from "../store/ticketSlice";
 import { useNavigate } from "react-router-dom";
+import { useTickets } from "../hooks/useTickets";
 
 import {
   PieChart,
@@ -21,39 +14,19 @@ import {
   CartesianGrid,
 } from "recharts";
 
+import Loader from "../components/Loader";
+
 const Dashboard = () => {
-  const dispatch = useDispatch();
-  const { tickets, loading } = useSelector((state) => state.tickets);
   const navigate = useNavigate();
+  const { tickets, loading, getTickets } = useTickets();
 
   useEffect(() => {
-    const getTickets = async () => {
-      try {
-        dispatch(setLoading(true));
-
-        const data = await fetchTicketsAPI(10, 0);
-
-        const transformed = data.todos.map((item) => ({
-          id: item.id,
-          title: item.todo,
-          status: item.completed ? "Resolved" : "Pending",
-        }));
-
-        dispatch(setTickets(transformed));
-        dispatch(setTotal(data.total));
-      } catch (err) {
-        dispatch(setError("Failed to fetch"));
-      } finally {
-        dispatch(setLoading(false));
-      }
-    };
-
     if (tickets.length === 0) {
-      getTickets();
+      getTickets(10, 0);
     }
-  }, [dispatch, tickets.length]); // ✅ FIXED
+  }, []);
 
-  // 📊 Stats
+  // Stats
   const total = tickets.length;
   const pending = tickets.filter((t) => t.status === "Pending").length;
   const resolved = tickets.filter((t) => t.status === "Resolved").length;
@@ -65,37 +38,46 @@ const Dashboard = () => {
 
   const COLORS = ["#facc15", "#22c55e"];
 
-  // ✅ Loading state
-  if (loading) {
-    return <div className="p-6 text-gray-500">Loading dashboard...</div>;
-  }
+  if (loading) return <Loader />;
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-semibold mb-6">Dashboard</h1>
+    <div className="min-h-screen text-gray-800 dark:text-gray-200">
+      {/* Heading */}
+      <h1 className="text-2xl font-semibold mb-6 text-gray-800"></h1>
 
       {/* Cards */}
-      <div className="grid grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {[
           { label: "Total Tickets", value: total, color: "" },
-          { label: "Pending", value: pending, color: "text-yellow-500" },
-          { label: "Resolved", value: resolved, color: "text-green-500" },
+          { label: "Pending", value: pending, color: "text-yellow-400" },
+          { label: "Resolved", value: resolved, color: "text-green-400" },
         ].map((item, i) => (
           <div
             key={i}
             onClick={() => navigate("/tickets")}
-            className="bg-white p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer"
+            className="cursor-pointer 
+              bg-white/70 dark:bg-gray-800/60 
+              backdrop-blur-lg 
+              border border-gray-200 dark:border-gray-700 
+              rounded-2xl p-5 
+              shadow-lg hover:shadow-xl 
+              transition-all duration-200"
           >
-            <p className="text-gray-500 text-sm">{item.label}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              {item.label}
+            </p>
             <h2 className={`text-3xl font-bold ${item.color}`}>{item.value}</h2>
           </div>
         ))}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white p-5 rounded-xl shadow">
-          <h2 className="mb-4 font-semibold">Ticket Distribution</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Pie Chart */}
+        <div className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg border border-gray-200 dark:border-gray-700 rounded-2xl p-5 shadow-lg">
+          <h2 className="mb-4 font-semibold text-gray-800 dark:text-white">
+            Ticket Distribution
+          </h2>
 
           <PieChart width={300} height={300}>
             <Pie
@@ -110,19 +92,39 @@ const Dashboard = () => {
                 <Cell key={index} fill={COLORS[index]} />
               ))}
             </Pie>
-            <Tooltip />
+
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#1f2937",
+                border: "none",
+                borderRadius: "8px",
+                color: "#fff",
+              }}
+            />
           </PieChart>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow">
-          <h2 className="mb-4 font-semibold">Overview</h2>
+        {/* Bar Chart */}
+        <div className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg border border-gray-200 dark:border-gray-700 rounded-2xl p-5 shadow-lg">
+          <h2 className="mb-4 font-semibold text-gray-800 dark:text-white">
+            Overview
+          </h2>
 
           <BarChart width={350} height={300} data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="value" fill="#3b82f6" />
+            <CartesianGrid stroke="#374151" strokeDasharray="3 3" />
+            <XAxis dataKey="name" stroke="#9ca3af" />
+            <YAxis stroke="#9ca3af" />
+
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#1f2937",
+                border: "none",
+                borderRadius: "8px",
+                color: "#fff",
+              }}
+            />
+
+            <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} />
           </BarChart>
         </div>
       </div>
@@ -131,15 +133,19 @@ const Dashboard = () => {
       <div className="mt-8 flex justify-end">
         <button
           onClick={() => navigate("/tickets")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow"
+          className="bg-blue-600 hover:bg-blue-700 
+          dark:bg-blue-500 dark:hover:bg-blue-600 
+          text-white px-6 py-2 rounded-lg 
+          shadow-md hover:shadow-lg 
+          transition-all duration-200"
         >
           View All Tickets →
         </button>
       </div>
 
-      {/* Empty */}
+      {/* Empty State */}
       {tickets.length === 0 && !loading && (
-        <div className="mt-10 text-center text-gray-500">
+        <div className="mt-10 text-center text-gray-500 dark:text-gray-400">
           No tickets found. Go to Tickets to create one.
         </div>
       )}

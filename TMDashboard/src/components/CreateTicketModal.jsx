@@ -1,6 +1,7 @@
 import { useDispatch } from "react-redux";
 import { addTicket, updateTicket } from "../store/ticketSlice";
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 const CreateTicketModal = ({ isOpen, onClose, editTicket }) => {
   const dispatch = useDispatch();
@@ -18,7 +19,10 @@ const CreateTicketModal = ({ isOpen, onClose, editTicket }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
 
     if (editTicket) {
       dispatch(
@@ -28,6 +32,7 @@ const CreateTicketModal = ({ isOpen, onClose, editTicket }) => {
           status,
         }),
       );
+      toast.success("Ticket updated successfully");
     } else {
       dispatch(
         addTicket({
@@ -36,6 +41,7 @@ const CreateTicketModal = ({ isOpen, onClose, editTicket }) => {
           status,
         }),
       );
+      toast.success("Ticket created successfully");
     }
 
     onClose();
